@@ -5,9 +5,9 @@
 #include "driver/i2s.h"
 
 // ---------- Wi-Fi and hosted bridge ----------
-const char* WIFI_SSID = "WIFI_ADIN";
-const char* WIFI_PASSWORD = "WIFI_SIFREN";
-const char* BRIDGE_HOST = "YOUR-SERVICE.onrender.com"; // host only; no https://
+const char* WIFI_SSID = "Redmi12";
+const char* WIFI_PASSWORD = "Homam123";
+const char* BRIDGE_HOST = "esp32-gemini-live.onrender.com";// host only; no https://
 const uint16_t BRIDGE_PORT = 443;
 const char* BRIDGE_PATH = "/";
 
