@@ -1,3 +1,4 @@
+```python
 import asyncio
 import os
 import logging
@@ -16,6 +17,7 @@ if not API_KEY:
     raise RuntimeError("GEMINI_API_KEY environment variable is required")
 
 client = genai.Client(api_key=API_KEY)
+
 CONFIG = {
     "response_modalities": ["AUDIO"],
     "system_instruction": (
@@ -30,77 +32,118 @@ CONFIG = {
     },
 }
 
+
 async def handle_device(device_ws):
     peer = getattr(device_ws, "remote_address", None)
     LOG.info("ESP32 connected: %s", peer)
+
     try:
-        async with client.aio.live.connect(model=MODEL, config=CONFIG) as session:
-async def device_to_gemini():
-    async for message in device_ws:
-        if isinstance(message, bytes):
-            LOG.info("ESP32 ses gönderdi: %d byte", len(message))
+        async with client.aio.live.connect(
+            model=MODEL,
+            config=CONFIG
+        ) as session:
 
-            await session.send_realtime_input(
-                audio=types.Blob(
-                    data=message,
-                    mime_type="audio/pcm;rate=16000"
-                )
-            )
-                    else:
-                        # Optional diagnostic text messages from the device are ignored.
-                        LOG.debug("Text from device: %s", message[:200])
+            async def device_to_gemini():
+                async for message in device_ws:
+                    if isinstance(message, bytes):
+                        LOG.info(
+                            "ESP32 ses gönderdi: %d byte",
+                            len(message)
+                        )
 
-           async def gemini_to_device():
-    try:
-        async for response in session.receive():
-            content = getattr(response, "server_content", None)
-            if not content:
-                continue
+                        await session.send_realtime_input(
+                            audio=types.Blob(
+                                data=message,
+                                mime_type="audio/pcm;rate=16000"
+                            )
+                        )
 
-            model_turn = getattr(content, "model_turn", None)
-            if not model_turn:
-                continue
+            async def gemini_to_device():
+                try:
+                    async for response in session.receive():
+                        content = getattr(
+                            response, "server_content", None
+                        )
 
-            for part in (getattr(model_turn, "parts", None) or []):
-                inline = getattr(part, "inline_data", None)
+                        if not content:
+                            continue
 
-                if inline and inline.data:
-                    data = inline.data
+                        model_turn = getattr(
+                            content, "model_turn", None
+                        )
 
-                    if isinstance(data, str):
-                        import base64
-                        data = base64.b64decode(data)
+                        if not model_turn:
+                            continue
 
-                    LOG.info("Gemini ses gönderdi: %d byte", len(data))
-                    await device_ws.send(data)
+                        for part in (
+                            getattr(model_turn, "parts", None) or []
+                        ):
+                            inline = getattr(
+                                part, "inline_data", None
+                            )
 
-                text = getattr(part, "text", None)
-                if text:
-                    LOG.info("Gemini text part: %s", text[:200])
+                            if inline and inline.data:
+                                data = inline.data
 
-    except Exception:
-        LOG.exception("Gemini ses alma hatası")
+                                LOG.info(
+                                    "Gemini ses gönderdi: %d byte",
+                                    len(data)
+                                )
+
+                                await device_ws.send(data)
+
+                            text = getattr(part, "text", None)
+
+                            if text:
+                                LOG.info(
+                                    "Gemini text part: %s",
+                                    text[:200]
+                                )
+
+                except Exception:
+                    LOG.exception("Gemini ses alma hatası")
+                    raise
+
             tasks = [
                 asyncio.create_task(device_to_gemini()),
                 asyncio.create_task(gemini_to_device()),
             ]
-            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+
+            done, pending = await asyncio.wait(
+                tasks,
+                return_when=asyncio.FIRST_COMPLETED
+            )
+
             for task in pending:
                 task.cancel()
-            await asyncio.gather(*pending, return_exceptions=True)
+
+            await asyncio.gather(
+                *pending,
+                return_exceptions=True
+            )
+
             for task in done:
                 exception = task.exception()
                 if exception:
                     raise exception
+
     except websockets.ConnectionClosed:
         LOG.info("ESP32 disconnected")
+
     except Exception:
         LOG.exception("Live session ended with an error")
+
     finally:
         LOG.info("Connection closed: %s", peer)
 
+
 async def main():
-    LOG.info("Starting Gemini Live bridge on port %s; model=%s", PORT, MODEL)
+    LOG.info(
+        "Starting Gemini Live bridge on port %s; model=%s",
+        PORT,
+        MODEL
+    )
+
     async with websockets.serve(
         handle_device,
         "0.0.0.0",
@@ -111,5 +154,7 @@ async def main():
     ):
         await asyncio.Future()
 
+
 if __name__ == "__main__":
     asyncio.run(main())
+```
