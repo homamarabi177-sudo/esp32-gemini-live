@@ -37,6 +37,7 @@ async def handle_device(device_ws):
         async with client.aio.live.connect(model=MODEL, config=CONFIG) as session:
             async def device_to_gemini():
                 async for message in device_ws:
+                    if isinstance(message, bytes):
                    if isinstance(message, bytes):
     LOG.info("ESP32 ses gönderdi: %d byte", len(message))
                         # ESP32 sends raw mono signed PCM, 16-bit little-endian, 16 kHz.
