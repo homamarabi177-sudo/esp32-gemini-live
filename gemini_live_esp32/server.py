@@ -37,11 +37,27 @@ async def handle_device(device_ws):
     LOG.info("ESP32 connected: %s", peer)
 
     try:
+        LOG.info("Gemini baglantisi deneniyor. Model: %s", MODEL)
+
+async with client.aio.live.connect(
+    model=MODEL,
+    config=CONFIG
+) as session:
+
+    LOG.info("Gemini Live oturumu acildi!")
+    
         async with client.aio.live.connect(
             model=MODEL,
             config=CONFIG
         ) as session:
+LOG.info("Gemini baglantisi deneniyor. Model: %s", MODEL)
 
+async with client.aio.live.connect(
+    model=MODEL,
+    config=CONFIG
+) as session:
+
+    LOG.info("Gemini Live oturumu acildi!")
             async def device_to_gemini():
                 async for message in device_ws:
                     if isinstance(message, bytes):
