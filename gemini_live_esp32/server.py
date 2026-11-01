@@ -46,27 +46,36 @@ async def handle_device(device_ws):
                         # Optional diagnostic text messages from the device are ignored.
                         LOG.debug("Text from device: %s", message[:200])
 
-            async def gemini_to_device():
-                async for response in session.receive():
-                    content = getattr(response, "server_content", None)
-                    if not content:
-                        continue
-                    model_turn = getattr(content, "model_turn", None)
-                    if not model_turn:
-                        continue
-                    for part in (getattr(model_turn, "parts", None) or []):
-                        inline = getattr(part, "inline_data", None)
-                        if inline and inline.data:
-                            # SDK returns raw audio bytes. The ESP32 plays PCM at 24 kHz.
-                            data = inline.data
-                            if isinstance(data, str):
-                                import base64
-                                data = base64.b64decode(data)
-                            await device_ws.send(data)
-                        text = getattr(part, "text", None)
-                        if text:
-                            LOG.info("Gemini text part: %s", text[:200])
+           async def gemini_to_device():
+    try:
+        async for response in session.receive():
+            content = getattr(response, "server_content", None)
+            if not content:
+                continue
 
+            model_turn = getattr(content, "model_turn", None)
+            if not model_turn:
+                continue
+
+            for part in (getattr(model_turn, "parts", None) or []):
+                inline = getattr(part, "inline_data", None)
+
+                if inline and inline.data:
+                    data = inline.data
+
+                    if isinstance(data, str):
+                        import base64
+                        data = base64.b64decode(data)
+
+                    LOG.info("Gemini ses gönderdi: %d byte", len(data))
+                    await device_ws.send(data)
+
+                text = getattr(part, "text", None)
+                if text:
+                    LOG.info("Gemini text part: %s", text[:200])
+
+    except Exception:
+        LOG.exception("Gemini ses alma hatası")
             tasks = [
                 asyncio.create_task(device_to_gemini()),
                 asyncio.create_task(gemini_to_device()),
