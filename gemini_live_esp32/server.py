@@ -35,15 +35,17 @@ async def handle_device(device_ws):
     LOG.info("ESP32 connected: %s", peer)
     try:
         async with client.aio.live.connect(model=MODEL, config=CONFIG) as session:
-            async def device_to_gemini():
-                async for message in device_ws:
-                    if isinstance(message, bytes):
-                   if isinstance(message, bytes):
-    LOG.info("ESP32 ses gönderdi: %d byte", len(message))
-                        # ESP32 sends raw mono signed PCM, 16-bit little-endian, 16 kHz.
-                        await session.send_realtime_input(
-                            audio=types.Blob(data=message, mime_type="audio/pcm;rate=16000")
-                        )
+async def device_to_gemini():
+    async for message in device_ws:
+        if isinstance(message, bytes):
+            LOG.info("ESP32 ses gönderdi: %d byte", len(message))
+
+            await session.send_realtime_input(
+                audio=types.Blob(
+                    data=message,
+                    mime_type="audio/pcm;rate=16000"
+                )
+            )
                     else:
                         # Optional diagnostic text messages from the device are ignored.
                         LOG.debug("Text from device: %s", message[:200])
