@@ -1,4 +1,3 @@
-```python
 import asyncio
 import os
 import logging
@@ -157,4 +156,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-```
